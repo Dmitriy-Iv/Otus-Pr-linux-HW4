@@ -120,7 +120,7 @@ errors: No known data errors
 [root@zfs ~]# zfs set compression=gzip-9 otus3
 [root@zfs ~]# zfs set compression=zle otus4
 ```
-6. Проверям, что все системы имеют разные методы сжатия
+6. Проверям, что все системы имеют разные методы сжатия.
 ```
 [root@zfs ~]# zfs get all | grep compression
 otus1  compression           lzjb                   local
@@ -195,7 +195,7 @@ total 39856
 -rw-r--r--. 1 root root 40784369 Feb  2 09:01 pg2600.converter.log
 ```
 9. Проверяем занимаемое место этим файлом на разных пулах и коэффициент сжатия, для того чтобы подтвердить - что gzip-9 на otus3 самый эффективный.
-с
+```
 [root@zfs ~]# zfs get all | grep compressratio | grep -v ref
 otus1  compressratio         1.81x                  -
 otus2  compressratio         2.22x                  -
