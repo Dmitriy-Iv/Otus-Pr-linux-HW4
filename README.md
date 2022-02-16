@@ -31,10 +31,9 @@
 # **Работа с ZFS**
 
 1. Запускаем машину и входим в неё по ssh - `vagrant up` и `vagrant ssh`, далее переходим в окружение root - `sudo -i` и начинаем работать,
-
 2. Проверяем список дисков
 ```
-[root@zfs ~]# lsblk
+**__[root@zfs ~]# lsblk__**
 NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
 sda      8:0    0   40G  0 disk
 └─sda1   8:1    0   40G  0 part /
@@ -47,7 +46,6 @@ sdg      8:96   0  512M  0 disk
 sdh      8:112  0  512M  0 disk
 sdi      8:128  0  512M  0 disk
 ```
-
 3. Создаём на 8 свободных дисках 4 пула с RAID1 (зеркало).
 ```
 [root@zfs ~]# zpool create otus1 mirror /dev/sdb /dev/sdc
@@ -55,7 +53,6 @@ sdi      8:128  0  512M  0 disk
 [root@zfs ~]# zpool create otus3 mirror /dev/sdf /dev/sdg
 [root@zfs ~]# zpool create otus4 mirror /dev/sdh /dev/sdi
 ```
-
 4. Проверяем информацию о созданных пулах и дисках, которые входят в их состав.
 ```
 [root@zfs ~]# zpool list && zpool status
@@ -116,13 +113,65 @@ config:
 
 errors: No known data errors
 ```
-
-5. Включаем сжатие на каждой из файловых систем `otus1-4`
+5. Включаем сжатие на каждой из файловых систем `otus1-4`.
 ```
 [root@zfs ~]# zfs set compression=lzjb otus1
 [root@zfs ~]# zfs set compression=lz4 otus2
 [root@zfs ~]# zfs set compression=gzip-9 otus3
 [root@zfs ~]# zfs set compression=zle otus4
 ```
+6. Проверям, что все системы имеют разные методы сжатия
+```
+[root@zfs ~]# zfs get all | grep compression
+otus1  compression           lzjb                   local
+otus2  compression           lz4                    local
+otus3  compression           gzip-9                 local
+otus4  compression           zle                    local
+```
+7. Тестируем сжатие, качаем один и тот же текстовый файл и раскладываем его на разные пулы.
+```
+[root@zfs ~]# for i in {1..4}; do wget -P /otus$i https://gutenberg.org/cache/epub/2600/pg2600.converter.log; done
+--2022-02-16 00:37:44--  https://gutenberg.org/cache/epub/2600/pg2600.converter.log
+Resolving gutenberg.org (gutenberg.org)... 152.19.134.47, 2610:28:3090:3000:0:bad:cafe:47
+Connecting to gutenberg.org (gutenberg.org)|152.19.134.47|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 40784369 (39M) [text/plain]
+Saving to: ‘/otus1/pg2600.converter.log’
 
-6. 
+100%[=====================================================================================================================================================================================================================================>] 40,784,369  3.76MB/s   in 18s
+
+2022-02-16 00:38:03 (2.16 MB/s) - ‘/otus1/pg2600.converter.log’ saved [40784369/40784369]
+
+--2022-02-16 00:38:03--  https://gutenberg.org/cache/epub/2600/pg2600.converter.log
+Resolving gutenberg.org (gutenberg.org)... 152.19.134.47, 2610:28:3090:3000:0:bad:cafe:47
+Connecting to gutenberg.org (gutenberg.org)|152.19.134.47|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 40784369 (39M) [text/plain]
+Saving to: ‘/otus2/pg2600.converter.log’
+
+100%[=====================================================================================================================================================================================================================================>] 40,784,369  2.93MB/s   in 17s
+
+2022-02-16 00:38:21 (2.24 MB/s) - ‘/otus2/pg2600.converter.log’ saved [40784369/40784369]
+
+--2022-02-16 00:38:21--  https://gutenberg.org/cache/epub/2600/pg2600.converter.log
+Resolving gutenberg.org (gutenberg.org)... 152.19.134.47, 2610:28:3090:3000:0:bad:cafe:47
+Connecting to gutenberg.org (gutenberg.org)|152.19.134.47|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 40784369 (39M) [text/plain]
+Saving to: ‘/otus3/pg2600.converter.log’
+
+100%[=====================================================================================================================================================================================================================================>] 40,784,369  1.81MB/s   in 24s
+
+2022-02-16 00:38:46 (1.59 MB/s) - ‘/otus3/pg2600.converter.log’ saved [40784369/40784369]
+
+--2022-02-16 00:38:46--  https://gutenberg.org/cache/epub/2600/pg2600.converter.log
+Resolving gutenberg.org (gutenberg.org)... 152.19.134.47, 2610:28:3090:3000:0:bad:cafe:47
+Connecting to gutenberg.org (gutenberg.org)|152.19.134.47|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 40784369 (39M) [text/plain]
+Saving to: ‘/otus4/pg2600.converter.log’
+
+100%[=====================================================================================================================================================================================================================================>] 40,784,369  2.27MB/s   in 20s
+
+2022-02-16 00:39:07 (1.94 MB/s) - ‘/otus4/pg2600.converter.log’ saved [40784369/40784369]
+```
