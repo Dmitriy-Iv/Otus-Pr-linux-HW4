@@ -239,7 +239,7 @@ zpoolexport/
 zpoolexport/filea
 zpoolexport/fileb
 ```
-12. Смотрим, можно ли сделать импорт пула
+12. Смотрим, можно ли сделать импорт пула.
 ```
 [root@zfs ~]# zpool import -d zpoolexport/
    pool: otus
@@ -253,7 +253,7 @@ zpoolexport/fileb
             /root/zpoolexport/filea  ONLINE
             /root/zpoolexport/fileb  ONLINE
 ```
-13. Проверяем ещё раз, что такого пула пока ещё нет у нас в системе 
+13. Проверяем ещё раз, что такого пула пока ещё нет у нас в системе.
 ```
 [root@zfs ~]# zpool list
 NAME    SIZE  ALLOC   FREE  CKPOINT  EXPANDSZ   FRAG    CAP  DEDUP    HEALTH  ALTROOT
@@ -262,7 +262,7 @@ otus2   480M  51.5M   428M        -         -     1%    10%  1.00x    ONLINE  -
 otus3   480M  51.5M   429M        -         -     1%    10%  1.00x    ONLINE  -
 otus4   480M  51.6M   428M        -         -     1%    10%  1.00x    ONLINE  -
 ```
-14. Импортируем пул и проверяем снова
+14. Импортируем пул и проверяем снова.
 ```
 [root@zfs ~]# zpool list && zpool status
 NAME    SIZE  ALLOC   FREE  CKPOINT  EXPANDSZ   FRAG    CAP  DEDUP    HEALTH  ALTROOT
@@ -336,7 +336,7 @@ config:
 
 errors: No known data errors
 ```
-15. Как мы видим, у нас появился новый пул otus. Смотрим вывод всех его параметров сначала через zpool, а потом через zfs
+15. Как мы видим, у нас появился новый пул otus. Смотрим вывод всех его параметров сначала через zpool, а потом через zfs.
 ```
 [root@zfs ~]# zpool get all otus
 NAME  PROPERTY                       VALUE                          SOURCE
@@ -469,7 +469,7 @@ otus  keyformat             none                   default
 otus  pbkdf2iters           0                      default
 otus  special_small_blocks  0                      default
 ```
-16. Запрашивая через - `zfs get <PARAMETRS> otus`
+16. Запрашивая через - `zfs get <PARAMETRS> otus`, выводим только необходимый нам параметр.
 
 
 ```
@@ -483,3 +483,48 @@ otus  readonly  off     default
 NAME  PROPERTY  VALUE    SOURCE
 otus  version   5        -
 ```
+17. Теперь протестируем восстановление пула из снапшота. Для этого скачаем тестовый снапшот
+```
+[root@zfs ~]# wget -O otus_task2.file --no-check-certificate https://drive.google.com/u/0/uc?id=1gH8gCL9y7Nd5Ti3IRmplZPF1XjzxeRAG&export=download
+[1] 3436
+[root@zfs ~]# --2022-02-16 20:14:26--  https://drive.google.com/u/0/uc?id=1gH8gCL9y7Nd5Ti3IRmplZPF1XjzxeRAG
+Resolving drive.google.com (drive.google.com)... 173.194.221.194, 2a00:1450:4010:c0a::c2
+Connecting to drive.google.com (drive.google.com)|173.194.221.194|:443... connected.
+HTTP request sent, awaiting response... 302 Found
+Location: https://drive.google.com/uc?id=1gH8gCL9y7Nd5Ti3IRmplZPF1XjzxeRAG [following]
+--2022-02-16 20:14:27--  https://drive.google.com/uc?id=1gH8gCL9y7Nd5Ti3IRmplZPF1XjzxeRAG
+Reusing existing connection to drive.google.com:443.
+HTTP request sent, awaiting response... 303 See Other
+Location: https://doc-00-bo-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/pmqgr48bvr7patgjvh50ddgn945pkav6/1645042425000/16189157874053420687/*/1gH8gCL9y7Nd5Ti3IRmplZPF1XjzxeRAG [following]
+Warning: wildcards not supported in HTTP.
+--2022-02-16 20:14:30--  https://doc-00-bo-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/pmqgr48bvr7patgjvh50ddgn945pkav6/1645042425000/16189157874053420687/*/1gH8gCL9y7Nd5Ti3IRmplZPF1XjzxeRAG
+Resolving doc-00-bo-docs.googleusercontent.com (doc-00-bo-docs.googleusercontent.com)... 142.251.1.132, 2a00:1450:4010:c1e::84
+Connecting to doc-00-bo-docs.googleusercontent.com (doc-00-bo-docs.googleusercontent.com)|142.251.1.132|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 5432736 (5.2M) [application/octet-stream]
+Saving to: ‘otus_task2.file’
+
+100%[=====================================================================================================================================================================================================================================>] 5,432,736   11.0MB/s   in 0.5s
+
+2022-02-16 20:14:31 (11.0 MB/s) - ‘otus_task2.file’ saved [5432736/5432736]
+
+
+[1]+  Done                    wget -O otus_task2.file --no-check-certificate https://drive.google.com/u/0/uc?id=1gH8gCL9y7Nd5Ti3IRmplZPF1XjzxeRAG
+```
+18. Восстанавливаем и проверим какой-нибудь параметр файловой системы.
+```
+[root@zfs ~]# zfs receive otus/test@today < otus_task2.file
+[root@zfs ~]# zfs get compression otus/test
+NAME       PROPERTY     VALUE     SOURCE
+otus/test  compression  zle       inherited from otus
+```
+19. Последним действием ищем файл и сообщение в нём.
+```
+[root@zfs ~]# cat $(find /otus/test -name "secret_message")
+https://github.com/sindresorhus/awesome
+```
+
+---
+
+# **Заключение**
+В данном ДЗ мы расмотрели команды для создания пулов и файловых систем zfs, выводить список параметров, импортировать и восстанавливать из снапшотов.  
